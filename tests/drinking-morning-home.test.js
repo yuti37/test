@@ -40,7 +40,7 @@ test('Refresh restores the pending notification without advancing or creating a 
  const h=night(),r=game(h.snapshot());r.start();home(r);assert.equal(visible(r),true);assert.equal(prompt(r).length,0);assert.ok(!r.notifications().some(n=>n.eventId.includes(':interactive:morning:')));
 });
 for(const [branch,text,reply] of [
- ['ordinary','어제 잘 들어갔어? 머리는 안 아프고?','fine'],
+ ['ordinary','어제 잘 들어감? 머리 안 아픔? ','fine'],
  ['happy','어제 나랑 있는 게 그렇게 좋았냐 ㅋㅋ','honest'],
  ['question','근데 어제 그 질문은 무슨 뜻이었어?','sincere'],
  ['different','어제 너 평소랑 좀 다르더라 ㅋㅋ 많이 취했었나 봐.','ask']

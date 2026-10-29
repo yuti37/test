@@ -49,7 +49,8 @@ test('approved copy is exact while original special/meaning and wind-down remain
  assert.equal(h.run("STAGE_TWELVE_FLOWS.shownu.daily.stages['day-follow'][1].replyTranslation"),'最近在重聽以前聽的歌，熟悉的聽起來挺好。');
  assert.equal(h.run("STAGE_TWELVE_FLOWS.shownu.daily.stages['end-day'][0].text"),'응 ㅋㅋ 그냥 잠깐 얘기하고 싶었어.');
  assert.equal(h.run("STAGE_TWELVE_FLOWS.shownu.flirt.stages.start[1].text"),'형한테는 내가 좀 특별한 편이야?');assert.equal(h.run("STAGE_TWELVE_FLOWS.shownu.flirt.stages['special-meaning'][0].text"),'그냥 형이랑 있으면 편하고, 자주 생각나.');
- assert.equal(require('node:crypto').createHash('sha256').update(h.run("JSON.stringify(STAGE_TWELVE_FLOWS.shownu['wind-down'])")).digest('hex'),'9b2dcabe4655d813e6ed311ad755123acca559e5679cdfea8765d2e769a3e90a');
+ assert.equal(h.run("STAGE_TWELVE_FLOWS.shownu['wind-down'].stages.start[0].reply"),'응 나도 이제 정리하고 앉았다. 저녁은 먹었어?');
+ assert.equal(require('node:crypto').createHash('sha256').update(h.run("JSON.stringify(STAGE_TWELVE_FLOWS.shownu['wind-down'])")).digest('hex'),'968d773e571155bf500b2357ecbf833786f7b7e7728d927b8d82270a762180e5');
 });
 test('no new memory revisit, but saved memory-answer can still finish',()=>{
  const h=ready();h.open();h.run("drinkingNightState().stage='complete';const a=lostPhoneStory.stageEleven.activeMessaging;a.memories.shownu={'shownu-special':{receivedAt:1,revisitAfterTurn:0}};const c=a.conversations.shownu;c.pausedTopics.flirt={status:'completed'}");
