@@ -3187,7 +3187,7 @@ function narrativeCallInProgress(){return ['ringing','connected'].includes(lostP
 function narrativeDrinkingFocus(){const d=lostPhoneStory?.stageSeven?.drinkingNight;return !!d&&!d.legacyCompleted&&(['tipsy','deeper','boundary','morning'].includes(d.stage)||d.stage==='invite'&&!!d.interactionStarted||!!d.pendingReply)}
 function narrativeDisplayDate(){try{return new Date(narrativeStoryTimestamp())}catch{return new Date(2026,9,23,18,12)}}
 function narrativeClockDate(){try{return Number(lostPhoneStory?.stageSeven?.drinkingNight?.morningStoryTimestamp)?narrativeDisplayDate():new Date()}catch{return new Date()}}
-function narrativeStoryTimestamp(){const d=lostPhoneStory?.stageSeven?.drinkingNight;return Math.max(new Date(2026,9,23,18,12).getTime(),Number(d?.lastStoryTimestamp)||0,Number(lostPhoneStory?.eventIntegration?.contactStoryTimestamp)||0,Number(d?.morningStoryTimestamp)||0,shownuShoesClockFloor())}
+function narrativeStoryTimestamp(){const d=lostPhoneStory?.stageSeven?.drinkingNight;return Math.max(new Date(2026,9,23,18,12).getTime(),Number(d?.lastStoryTimestamp)||0,Number(lostPhoneStory?.eventIntegration?.contactStoryTimestamp)||0,Number(d?.morningStoryTimestamp)||0,shownuShoesClockFloor(),typeof shownuFinaleClockFloor==='function'?shownuFinaleClockFloor():0)}
 function narrativeOriginalEvent(event){const id=String(event?.id||'');return ['instagram-opening-call','lost-phone-incoming-call','lost-phone-call-timeout','lost-phone-convergence'].includes(event?.type)||id.startsWith('lost-phone-shownu-checkin-v1:instagram-first-call')||id.startsWith('lost-phone-shownu-checkin-v1:call:')||id.includes(':convergence:')||id.includes(':world:shownu-after-call:')||/^lost-phone-shownu-checkin-v1:reply-(home|why|outside):/.test(id)}
 function narrativeEventEligibility(event,{history=false}={}){
  const result=(phase,reason)=>({allowed:['eligible','in-progress','completed'].includes(phase),phase,reason});
@@ -3766,6 +3766,185 @@ const revisedCategoriesBase=stageElevenCurrentCategories;stageElevenCurrentCateg
 const shoesResetBase=resetGameRuntimeForFreshStart;resetGameRuntimeForFreshStart=function(...args){clearInterval(shoesEligibilityTimer);shoesEligibilityTimer=null;return shoesResetBase(...args)};
 const shoesInitializeBase=initializeGameOnce;let shoesEligibilityTimer=null;
 initializeGameOnce=function(){const ok=shoesInitializeBase();if(ok&&shoesEligibilityTimer===null){shoesEligibilityTimer=setInterval(syncShownuShoes,1000);syncShownuShoes()}return ok};
+
+// Final phone chapter. Player messages remain individual Stage Twelve choices;
+// a control-only B selection never becomes a fabricated Hyungwon message.
+const SHOWNu_FINALE_ID='shownu-c1c2-endings-v1',SHOWNu_FINALE_TOPIC='c1c2-endings';
+const SHOWNu_ENDING_DEFINITIONS=Object.freeze({
+ A:{label:'Ending A',title:'형원의 고백',translation:'亨源先告白；賢佑表示可能有相似感受，提出當面談。尚未正式確認交往。',summary:'형원이 먼저 고백하고 셔누가 비슷한 마음일 수 있다고 말하며 직접 만나 이야기하자고 합니다. 아직 교제는 확정되지 않았습니다.'},
+ B:{label:'Ending B',title:'셔누의 고백',translation:'賢佑主動坦白感情，表示已在亨源家樓下，希望當面談。畫面中尚未正式確認交往。',summary:'셔누가 먼저 마음을 밝히고 형원의 집 앞에서 만나 이야기하자고 합니다. 화면 안에서는 아직 교제를 확정하지 않습니다.'}
+});
+const finaleLine=(text,translation)=>({from:'셔누',text,translation});
+STAGE_TWELVE_FLOWS.shownu[SHOWNu_FINALE_TOPIC]={title:'마지막 이야기',stages:{
+ 'c1-meal':[{id:'c1-meal',text:'응 형은?',translation:'嗯，哥呢？',replyMessages:[finaleLine('나도 먹었어','我也吃了'),finaleLine('뭐해?','在做什麼？')],next:'c1-why'}],
+ 'c1-why':[{id:'c1-why',text:'왜 ㅋㅋ',translation:'怎麼了ㅋㅋ',reply:'그냥 생각나서',replyTranslation:'只是想到你',next:'c2-choice'}],
+ 'c2-choice':[
+  {id:'route-a',text:'ㅋㅋㅋㅋ 형은 자꾸 사람 헷갈리게 해 ㅋㅋ',translation:'ㅋㅋㅋㅋ哥老是讓人搞不清楚ㅋㅋ',endingRoute:'A',reply:'내가? 왜?',replyTranslation:'我？怎麼了？',next:'a-words'},
+  {id:'route-b',text:'형의 말을 더 듣는다',translation:'聽賢佑繼續說（選擇路線，不發送訊息）',endingRoute:'B',controlOnly:true,next:'b-deny'}
+ ],
+ 'a-words':[{id:'a-words',text:'그런 말을 아무렇지도 않게 하니까',translation:'因為哥總是若無其事地說那種話',reply:'무슨 말?',replyTranslation:'什麼話？',next:'a-remember'}],
+ 'a-remember':[{id:'a-remember',text:'방금도 그렇고. 나 생각났다는 거',translation:'剛才也是，說想到我的那句',playerOnly:true,next:'a-different'}],
+ 'a-different':[{id:'a-different',text:'근데 나한텐 좀 다르게 들려',translation:'不過，對我來說聽起來有點不一樣',playerOnly:true,next:'a-confess'}],
+ 'a-confess':[{id:'a-confess',text:'나 형 좋아해, 그냥 형으로 좋아하는 거 말고',translation:'我喜歡哥，不只是把哥當哥哥的那種喜歡',playerOnly:true,next:'a-serious'}],
+ 'a-serious':[{id:'a-serious',text:'진심으로, 장난 아니야',translation:'我是認真的，不是開玩笑',replyMessages:[
+  finaleLine('…정말?','……真的？'),finaleLine('아, 내가 헷갈리게 했어?','啊，是我讓你搞不清楚了嗎？'),finaleLine('뭐, 나도 좀 비슷했던 것 같기도 하고 ㅎㅎㅎ','嗯，我好像也有點類似的感覺ㅎㅎㅎ'),finaleLine('일단 집 앞으로 나와','先到家門口來'),finaleLine('얼굴 보고 얘기해','見面再說')
+ ],next:null,close:true}],
+ 'b-deny':[{id:'b-deny',text:'내가? 아니거든 ㅋㅋㅋ',translation:'我？才沒有ㅋㅋㅋ',replyMessages:[finaleLine('연락도 늦게 받고 만나도 딴생각하고','聯絡時也晚回，見面的時候也在想別的事'),finaleLine('너 나 신경 쓰여서 그러는 거잖아','你是因為在意我，才會這樣吧')],next:'b-silence'}],
+ 'b-silence':[{id:'b-silence',text:'…',translation:'……',playerOnly:true,next:'b-sober'}],
+ 'b-sober':[{id:'b-sober',text:'형 술 마셨어?',translation:'哥喝酒了嗎？',replyMessages:[
+  finaleLine('안 마셨어 맨정신이야','沒喝，我很清醒'),finaleLine('너 나 좋아하는 거 맞잖아','你是喜歡我的，沒錯吧'),finaleLine('나도 너 좋아하는 것 같아서 그래','因為我覺得自己也喜歡你'),finaleLine('언제까지 둘이 눈치만 볼 수는 없잖아','總不能一直只有我們兩個互相試探吧'),finaleLine('나 지금 너희 집 앞이니까 얘기 좀 하자','我現在就在你家門口，我們聊一下'),finaleLine('옷 따뜻하게 입고 나와','穿暖一點再出來')
+ ],next:null,close:true}]
+}};
+function shownuFinaleState(){return lostPhoneStory?.stageEleven?.activeMessaging?.specialEvents?.c1c2EndingsV1||null}
+function shownuFinaleClockFloor(){const at=Number(shownuFinaleState()?.lastStoryTimestamp);return Number.isFinite(at)&&at>0?at:0}
+function shownuFinaleOwnEvent(event){return String(event?.id||'').startsWith(`${SHOWNu_FINALE_ID}:`)||String(event?.id||'').includes(`:conversation:shownu:${SHOWNu_FINALE_TOPIC}:`)}
+function shownuFinaleChoice(record){const meta=record?.conversation;return meta?.topicId===SHOWNu_FINALE_TOPIC?(STAGE_TWELVE_FLOWS.shownu[SHOWNu_FINALE_TOPIC].stages[meta.stage]||[]).find(choice=>String(meta.choiceId).endsWith(`:${choice.id}`)):null}
+function shownuFinaleBusy(){
+ if(narrativeCallInProgress())return 'call-active';
+ if([lostPhoneStory?.call,lostPhoneStory?.openingCall].some(call=>call?.pendingOutsideCallback||call?.status==='scheduled'))return 'call-pending';
+ if((gameEventMemory.events||[]).some(event=>!shownuFinaleOwnEvent(event)&&!['completed','cancelled','inapplicable'].includes(event.status)&&(event.payload?.chatId==='shownu'||photoShareIsShownuMainEvent(event))))return 'message-pending';
+ return null;
+}
+function shownuFinaleEntryEligibility(){
+ if(gameInitializationStatus!=='started'||!phoneUnlocked)return {allowed:false,reason:'game-not-ready'};
+ if(shownuFinaleState())return {allowed:false,reason:'chapter-already-created'};
+ if(shownuShoesState()?.status!=='completed')return {allowed:false,reason:'shoes-not-complete'};
+ const d=drinkingNightState(),reply=d?.choices?.morning?.replyId;
+ if(d?.stage!=='complete'||d?.morningStatus!=='completed'||!reply||!getGameEvent(reply)?.effects?.preciseReadAt)return {allowed:false,reason:'morning-not-complete-or-read'};
+ const a=lostPhoneStory?.stageEleven?.activeMessaging,c=a?.conversations?.shownu;
+ if(!c||c.pendingReply||c.status==='active'&&c.activeTopicId)return {allowed:false,reason:'conversation-busy'};
+ const terminal=Object.values(a.usedByChat?.shownu||{}).find(record=>record.conversation?.topicId===SHOWNu_SHOES_TOPIC&&record.conversation.nextStage===null&&stageSevenSourceExists('shownu',stageTwelveExpectedReplyMessageId(record))&&getGameEvent(stageTwelveExpectedReplyMessageId(record))?.status==='completed');
+ if(!terminal)return {allowed:false,reason:'shoes-final-reply-not-delivered'};
+ const busy=shownuFinaleBusy();return {allowed:!busy,reason:busy||'ready'};
+}
+function shownuFinaleRefresh(){
+ if(activeChat?.id==='shownu'){renderAfterWorkPanel();if(!$('#stage-eleven-active-sheet')?.hidden)stageElevenRenderComposer()}
+}
+function shownuFinaleScheduleTransition(action){
+ return createGameEvent({id:`${SHOWNu_FINALE_ID}:${action}`,type:'shownu-finale-transition',source:'system',scheduledAt:action==='c2-ready'?shownuFinaleState().c2ReadyAt:Date.now(),shouldNotify:false,payload:{action}});
+}
+let syncingShownuFinale=false;
+function syncShownuFinale(){
+ if(syncingShownuFinale||gameInitializationStatus!=='started'||!phoneUnlocked)return;
+ syncingShownuFinale=true;
+ try{
+  let state=shownuFinaleState();
+  if(!state){
+   if(!shownuFinaleEntryEligibility().allowed)return;
+   const active=lostPhoneStory.stageEleven.activeMessaging;active.specialEvents=active.specialEvents||{};
+   state=active.specialEvents.c1c2EndingsV1={version:1,status:'scheduled',phase:'opening',route:null,openingId:`${SHOWNu_FINALE_ID}:opening-message`,lastStoryTimestamp:Math.max(narrativeStoryTimestamp(),...(CONFIG.chats||[]).flatMap(chat=>chat.messages||[]).map(kakaoChatMessageTimestamp).filter(Number.isFinite))};
+   if(!saveLostPhoneStory()){delete active.specialEvents.c1c2EndingsV1;return}
+  }
+  if(state.status==='completed'||state.recoveryIssue)return;
+  if(state.phase==='opening'&&!getGameEvent(state.openingId))stageSevenQueueMessage(state.openingId,'shownu','셔누','밥 먹었어?','吃飯了嗎？',1000,{notify:true});
+  if(state.phase==='pause'&&state.c2ReadyAt)shownuFinaleScheduleTransition('c2-ready');
+  if(state.phase==='branch-pending'&&state.route==='B')shownuFinaleScheduleTransition('route-b');
+  // Deferred deliveries use the existing revalidation and saved remaining delay.
+  if(gameEventMemory.events.some(event=>shownuFinaleOwnEvent(event)&&event.status==='deferred'))resumeNarrativeEvents();
+ }finally{syncingShownuFinale=false}
+}
+const finaleMessageBase=stageSevenQueueMessage;
+stageSevenQueueMessage=function(id,chatId,from,text,translation,delay=0,options={}){
+ if(shownuFinaleOwnEvent({id})&&!options.storyTimestamp){const queued=gameEventMemory.events.filter(shownuFinaleOwnEvent).map(event=>Number(event.payload?.message?.storyTimestamp)||0);options={...options,storyTimestamp:Math.max(narrativeStoryTimestamp(),...queued)+1000}}
+ return finaleMessageBase(id,chatId,from,text,translation,delay,options);
+};
+const finaleEligibilityBase=narrativeEventEligibility;
+narrativeEventEligibility=function(event,options){
+ if(!shownuFinaleOwnEvent(event)){
+  const state=shownuFinaleState();
+  if(state&&state.status!=='completed'&&event?.status!=='completed'&&photoShareIsShownuMainEvent(event))return {allowed:false,phase:'deferred',reason:'finale-conversation-has-focus'};
+  return finaleEligibilityBase(event,options);
+ }
+ if(['cancelled','inapplicable'].includes(event?.status))return {allowed:false,phase:'not-applicable',reason:'finale-event-retired'};
+ const state=shownuFinaleState(),message=event?.payload?.message;
+ // A delivered opening/final line is still eligible for notification creation.
+ if(event?.status==='completed'||message?.id&&stageSevenSourceExists('shownu',message.id))return {allowed:true,phase:'completed',reason:'finale-delivered'};
+ if(!state)return {allowed:false,phase:'deferred',reason:'finale-state-not-restored'};
+ if(state.status==='completed')return {allowed:false,phase:'not-applicable',reason:'finale-complete'};
+ const id=String(event.id),route=/:route-b(?:$|:)/.test(id)||/:b-(?:deny|silence|sober):/.test(id)?'B':/:route-a:|:a-(?:words|remember|different|confess|serious):/.test(id)?'A':null;
+ if(route&&state.route!==route)return {allowed:false,phase:'not-applicable',reason:'other-ending-route'};
+ if(gameInitializationStatus!=='started'||!phoneUnlocked||narrativeCallInProgress())return {allowed:false,phase:'deferred',reason:'finale-game-or-call-not-ready'};
+ return {allowed:true,phase:'eligible',reason:'current-finale'};
+};
+registerGameEventHandler('shownu-finale-transition',event=>{
+ const state=shownuFinaleState(),c=lostPhoneStory?.stageEleven?.activeMessaging?.conversations?.shownu;
+ if(!state||!c||state.status==='completed')return {notify:false};
+ if(event.payload.action==='c2-ready'&&state.phase==='pause'&&c.stage==='c2-choice'&&!c.pendingReply){
+  state.phase='c2';if(!saveLostPhoneStory()){state.phase='pause';throw new Error('Could not save C2 readiness')}
+  shownuFinaleRefresh();
+ }else if(event.payload.action==='route-b'&&state.route==='B'&&state.phase==='branch-pending')stageSevenQueueMessage(`${SHOWNu_FINALE_ID}:route-b:opening-message`,'shownu','셔누','요즘 너 나 조금 피하는 것 같아서','因為覺得你最近好像有點在躲我',0,{notify:true});
+ return {notify:false};
+});
+const finaleActiveReplyBase=stageElevenActiveWorldEvent;
+stageElevenActiveWorldEvent=function(event){
+ const p=event?.payload,active=lostPhoneStory?.stageEleven?.activeMessaging,c=active?.conversations?.shownu;
+ const record=p?.chatId==='shownu'?Object.values(active?.usedByChat?.shownu||{}).find(item=>`${item.eventId}:reply`===event.id):null,choice=shownuFinaleChoice(record);
+ if(!choice?.playerOnly)return finaleActiveReplyBase(event);
+ if(record.replyDelivered||c?.activeTopicId!==SHOWNu_FINALE_TOPIC||c.pendingReply!==event.id)return {notify:false};
+ if(!stageSevenSourceExists('shownu',record.eventId))throw new Error('Finale player message has not been delivered');
+ const before=JSON.stringify({record,c});
+ record.replyScheduled=true;record.replyDelivered=true;record.responseKind='player-only';record.replyDeliveredAt=Date.now();
+ c.pendingReply=null;c.stage=choice.next;c.status='active';
+ if(!saveLostPhoneStory()){const old=JSON.parse(before);Object.assign(record,old.record);Object.assign(c,old.c);throw new Error('Could not save finale player-only transition')}
+ shownuFinaleRefresh();return {notify:false};
+};
+const finaleKakaoBase=gameEventHandlers.get('kkt-message');
+gameEventHandlers.set('kkt-message',(event,options)=>{
+ const result=finaleKakaoBase(event,options),state=shownuFinaleState(),message=event.payload?.message;
+ if(!state||!message||!shownuFinaleOwnEvent(event)||!stageSevenSourceExists('shownu',message.id))return result;
+ const c=lostPhoneStory.stageEleven.activeMessaging.conversations.shownu;
+ state.lastStoryTimestamp=Math.max(state.lastStoryTimestamp||0,Number(message.storyTimestamp)||0);
+ if(state.status!=='completed'){
+  if(message.id===state.openingId&&state.phase==='opening'){
+   c.status='active';c.activeTopicId=SHOWNu_FINALE_TOPIC;c.stage='c1-meal';c.pendingReply=null;state.status='active';state.phase='c1';
+  }else if(message.id===`${SHOWNu_FINALE_ID}:route-b:opening-message`&&state.route==='B'&&state.phase==='branch-pending'){
+   c.status='active';c.activeTopicId=SHOWNu_FINALE_TOPIC;c.stage='b-deny';c.pendingReply=null;state.phase='route-b';
+  }else if(c.activeTopicId===SHOWNu_FINALE_TOPIC&&c.stage==='c2-choice'&&!c.pendingReply&&state.phase==='c1'){
+   state.phase='pause';state.c2ReadyAt=Date.now()+3000;
+  }
+  if(c.pausedTopics?.[SHOWNu_FINALE_TOPIC]?.status==='completed'&&state.route){state.status='completed';state.phase='complete';state.endingId=state.route;state.completedAt=Date.now();state.finalMessageId=message.id;state.relationshipStatus='not-confirmed';}
+ }
+ if(!saveLostPhoneStory())throw new Error('Could not save final chapter delivery');
+ if(state.phase==='pause')shownuFinaleScheduleTransition('c2-ready');
+ updateHomeStoryDate();updateTime();shownuFinaleRefresh();return result;
+});
+const finaleOptionsBase=stageElevenActiveOptions;
+stageElevenActiveOptions=function(chatId){
+ const items=finaleOptionsBase(chatId),state=shownuFinaleState();if(chatId!=='shownu'||!state)return items;
+ if(state.status==='completed'||state.phase==='opening'||state.phase==='pause'||state.phase==='branch-pending')return [];
+ return items.filter(item=>item.topicId===SHOWNu_FINALE_TOPIC);
+};
+const finaleCommitBase=stageElevenCommitActiveMessage;
+stageElevenCommitActiveMessage=function(item){
+ if(item?.topicId!==SHOWNu_FINALE_TOPIC)return activeChat?.id==='shownu'&&shownuFinaleState()?false:finaleCommitBase(item);
+ const state=shownuFinaleState();if(!state||!phoneUnlocked||activeChat?.id!=='shownu'||!$('#chat-room')?.classList.contains('active')||stageElevenComposerBusy||!stageElevenActiveOptions('shownu').some(option=>option.id===item.id))return false;
+ const previous=JSON.stringify(state),c=lostPhoneStory.stageEleven.activeMessaging.conversations.shownu;
+ if(item.endingRoute){
+  if(state.route)return false;
+  state.route=item.endingRoute;state.phase=item.controlOnly?'branch-pending':'route-a';
+  if(!item.controlOnly&&!saveLostPhoneStory()){Object.assign(state,JSON.parse(previous));return false}
+ }
+ if(item.controlOnly){
+  const oldPending=c.pendingReply;c.pendingReply=`${SHOWNu_FINALE_ID}:route-b`;
+  if(!saveLostPhoneStory()){c.pendingReply=oldPending;Object.assign(state,JSON.parse(previous));return false}
+  shownuFinaleScheduleTransition('route-b');stageElevenCloseComposer();shownuFinaleRefresh();return true;
+ }
+ const accepted=finaleCommitBase(item);if(!accepted&&item.endingRoute){Object.assign(state,JSON.parse(previous));saveLostPhoneStory()}return accepted;
+};
+const finaleGroupBase=stageSevenGroupForChat;
+stageSevenGroupForChat=function(chatId){return chatId==='shownu'&&shownuFinaleState()?null:finaleGroupBase(chatId)};
+const finalePanelBase=renderAfterWorkPanel;
+renderAfterWorkPanel=function(){
+ const state=shownuFinaleState();if(activeChat?.id!=='shownu'||!state)return finalePanelBase();
+ const panel=$('#after-work-panel');if(!panel)return;
+ if(state.status!=='completed'){panel.classList.remove('active');panel.innerHTML='';return}
+ const definition=SHOWNu_ENDING_DEFINITIONS[state.endingId];if(!definition)return;
+ panel.classList.add('active');panel.innerHTML=`<div class="story-panel-title">${definition.label} · ${escapeHtml(definition.title)}</div><div class="story-panel-note">${escapeHtml(definition.summary)}<br>${escapeHtml(definition.translation)}</div>`;
+};
+const finaleComposerBase=stageElevenRenderComposer;
+stageElevenRenderComposer=function(){finaleComposerBase();if(stageElevenComposerSelection?.controlOnly){const button=stageElevenEnsureComposer().querySelector('[data-active-confirm]');if(button)button.textContent='선택 · 確認選擇'}};
+const finaleSyncBase=syncShownuShoes;
+syncShownuShoes=function(){finaleSyncBase();syncShownuFinale()};
 </script>
 </body>
 </html>
