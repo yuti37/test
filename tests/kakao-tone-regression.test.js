@@ -343,9 +343,10 @@ for(const f of approvedTwelveCopies){
   const r=game(h.snapshot());r.start();r.advance(10000);assert.equal(JSON.stringify(byId(r,m.id)),before);assert.equal(messages(r).filter(x=>x.id===m.id).length,1);
  });
 }
-test('Only the two approved reply/translation pairs change; all surrounding flow fields and options retain their baseline',()=>{
+test('Previously approved replies and the newly approved flirt-joke copy preserve all other flirt fields',()=>{
  const h=ready(),copy=JSON.parse(h.run('JSON.stringify({minhyuk:STAGE_TWELVE_FLOWS.minhyuk.daily,shownu:STAGE_TWELVE_FLOWS.shownu.flirt})'));
  for(const f of approvedTwelveCopies){const choice=copy[f.chatId].stages[f.stage].find(i=>i.id===f.choice);choice.reply=f.old;choice.replyTranslation=f.oldTranslation}
+ const revisedJoke=copy.shownu.stages['flirt-after'].find(i=>i.id==='flirt-joke');revisedJoke.reply='안 될 건 없지 ㅋㅋ 다음에 시간 맞춰 보자.';revisedJoke.replyTranslation='也不是不行ㅋㅋ下次看看時間能不能配合。';
  assert.equal(crypto.createHash('sha256').update(JSON.stringify(copy)).digest('hex'),'f17f9e7fe56a4e74af792b42b8cb5ea75fbcfd41460307aee293e15cfebe81f8');
  const specialSay=copy.shownu.stages['flirt-special-answer'].find(i=>i.id==='special-say');assert.equal(specialSay.text,'형은 나한테 좀 특별해.');assert.equal(specialSay.reply,'특별하다고? 어떤 의미로? ㅋㅋ');assert.equal(specialSay.next,'special-meaning');
 });
