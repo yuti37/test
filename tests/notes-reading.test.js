@@ -149,3 +149,9 @@ test('Both phone screens share the unchanged local turtle wallpaper with cover s
  assert.equal((html.match(/id="wallpaper"/g)||[]).length,1);
  assert.ok(fs.statSync(path.join(__dirname,'../assets/turtle-wallpaper.png')).size>0);
 });
+
+test('Home does not cover the shared wallpaper with legacy artwork', () => {
+ assert.match(html,/\.home-screen\{padding:59px 20px 112px;background:transparent\}/);
+ assert.ok(!/\.home-screen(?:::before)?\{[^}]*background:[^}]*gradient/.test(html));
+ assert.ok(!html.includes('serviceWorker.register'));
+});
